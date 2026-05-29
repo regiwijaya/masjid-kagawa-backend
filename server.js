@@ -26,13 +26,54 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ===== CORS =====
+const allowedOrigins = [
+  "https://masjidkagawa.com",
+  "https://www.masjidkagawa.com",
+  "http://localhost:5173",
+  "http://localhost:3000",
+];
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  if (!origin || allowedOrigins.includes(origin)) {
+    if (origin) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+    }
+
+    res.setHeader("Vary", "Origin");
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+    );
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization"
+    );
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(204);
+    }
+
+    return next();
+  }
+
+  return res.status(403).json({
+    message: "CORS blocked",
+    origin,
+  });
+});
+
 app.use(
   cors({
-    origin: [
-      "https://masjidkagawa.com",
-      "https://www.masjidkagawa.com",
-      "http://localhost:5173",
-    ],
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked: ${origin}`));
+    },
     credentials: true,
   })
 );
@@ -76,6 +117,7 @@ app.use((req, res) => {
 // ===== ERROR HANDLER =====
 app.use((err, req, res, next) => {
   console.error("❌ SERVER ERROR:", err);
+
   res.status(err.status || 500).json({
     message: err.message || "Server error",
   });
