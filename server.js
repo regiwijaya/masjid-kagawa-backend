@@ -26,28 +26,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ===== CORS =====
-const allowedOrigins = [
-  "https://masjidkagawa.com",
-  "https://www.masjidkagawa.com",
-  "http://localhost:5173",
-  "http://localhost:3000",
-];
-
-const corsOptions = {
-  origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    console.warn(`⚠️ CORS blocked: ${origin}`);
-    return callback(null, false);
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
-
-app.use(cors(corsOptions));
+// Versi paling stabil untuk Hostinger.
+// Setelah backend hidup normal, nanti bisa diperketat lagi.
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 // ===== BODY LIMIT =====
 app.use(express.json({ limit: "20mb" }));
