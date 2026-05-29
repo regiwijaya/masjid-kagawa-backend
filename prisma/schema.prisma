@@ -7,122 +7,74 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Admin {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  role      String   @default("admin")
-  createdAt DateTime @default(now())
-}
-
-model Announcement {
-  id          Int      @id @default(autoincrement())
-  title       String
-  category    String?
-  date        DateTime
-  description String?
-  imageUrl    String?
-  isPublished Boolean  @default(true)
-  isFeatured  Boolean  @default(false)
-  createdBy   Int?
-  updatedBy   Int?
-  createdAt   DateTime @default(now())
-}
-
-model Activity {
-  id          Int      @id @default(autoincrement())
-  title       String
-
-  // 🔥 NEW (CORE)
-  type        String   @default("kegiatan") // kegiatan | kajian
-
-  category    String?  @default("Kegiatan")
-  date        DateTime
-  startTime   String?
-  endTime     String?
-
-  // 🔥 untuk kajian
-  ustadz      String?
-
-  location    String?
-  description String? @db.LongText
-  imageUrl    String?
-
-  isPublished Boolean  @default(true)
-  isFeatured  Boolean  @default(false)
-
-  createdBy   Int?
-  updatedBy   Int?
-
-  createdAt   DateTime @default(now())
-}
-
-model Kajian {
-  id          Int      @id @default(autoincrement())
-  title       String
-  category    String?  @default("Lainnya")
-  ustadz      String?
-  date        DateTime
-  time        String?
-  location    String?  @default("Masjid Kagawa")
-  description String?
-  imageUrl    String?
-  isPublished Boolean  @default(true)
-  isFeatured  Boolean  @default(false)
-  createdBy   Int?
-  updatedBy   Int?
-  createdAt   DateTime @default(now())
-}
-
-model Post {
-  id          Int      @id @default(autoincrement())
-  title       String
-  slug        String   @unique
-
-  excerpt     String   @db.Text
-  content     String   @db.LongText
-
-  imageUrl    String?
-  category    String?
-  author      String?
-
-  isPublished Boolean  @default(true)
-  isFeatured  Boolean  @default(false)
-
-  createdBy   Int?
-  updatedBy   Int?
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt @default(now()) // 🔥 FIX
-}
-
-model AboutSetting {
+model aboutsetting {
   id                Int      @id @default(autoincrement())
   heroTitle         String?
   heroSubtitle      String?
   heroImageUrl      String?
   historyTitle      String?
-  historyText       String? @db.Text
+  historyText       String?  @db.Text
   historyImageUrl   String?
   visionTitle       String?
-  visionText        String? @db.Text
+  visionText        String?  @db.Text
   missionTitle      String?
-  missionItems      Json?
-  leaders           Json?
-  footerDescription String? @db.Text
+  missionItems      String?  @db.LongText
+  leaders           String?  @db.LongText
+  footerDescription String?  @db.Text
   address           String?
   email             String?
   phone             String?
-  mapEmbedUrl       String? @db.Text
+  mapEmbedUrl       String?  @db.Text
   imamDuty          String?
   muadzinDuty       String?
-  social            Json?
+  social            String?  @db.LongText
   updatedBy         Int?
   createdAt         DateTime @default(now())
 }
 
-model Contact {
+model activity {
+  id          Int      @id @default(autoincrement())
+  title       String
+  category    String?  @default("Kegiatan")
+  date        DateTime
+  startTime   String?
+  endTime     String?
+  location    String?
+  description String?  @db.LongText
+  imageUrl    String?
+  isPublished Boolean  @default(true)
+  createdBy   Int?
+  updatedBy   Int?
+  createdAt   DateTime @default(now())
+  isFeatured  Boolean  @default(false)
+  type        String   @default("kegiatan")
+  ustadz      String?
+}
+
+model admin {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique(map: "Admin_email_key")
+  password  String
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+}
+
+model announcement {
+  id          Int      @id @default(autoincrement())
+  title       String
+  category    String?
+  date        DateTime
+  description String?
+  imageUrl    String?
+  isPublished Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  createdBy   Int?
+  updatedBy   Int?
+  createdAt   DateTime @default(now())
+}
+
+model contact {
   id          Int      @id @default(autoincrement())
   type        String
   name        String?
@@ -131,11 +83,10 @@ model Contact {
   category    String?
   isAnonymous Boolean  @default(false)
   isRead      Boolean  @default(false)
-
   createdAt   DateTime @default(now())
 }
 
-model DonationSetting {
+model donationsetting {
   id                         Int      @id @default(autoincrement())
   bankJapanName              String?
   bankJapanAccountName       String?
@@ -153,7 +104,7 @@ model DonationSetting {
   createdAt                  DateTime @default(now())
 }
 
-model IqamahSetting {
+model iqamahsetting {
   id        Int      @id @default(autoincrement())
   subuh     String?
   zuhur     String?
@@ -161,4 +112,38 @@ model IqamahSetting {
   maghrib   String?
   isya      String?
   createdAt DateTime @default(now())
+}
+
+model kajian {
+  id          Int      @id @default(autoincrement())
+  title       String
+  category    String?  @default("Lainnya")
+  ustadz      String?
+  date        DateTime
+  time        String?
+  location    String?  @default("Masjid Kagawa")
+  description String?
+  imageUrl    String?
+  isPublished Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  createdBy   Int?
+  updatedBy   Int?
+  createdAt   DateTime @default(now())
+}
+
+model post {
+  id          Int      @id @default(autoincrement())
+  title       String
+  slug        String   @unique(map: "Post_slug_key")
+  excerpt     String   @db.Text
+  content     String   @db.LongText
+  imageUrl    String?
+  category    String?
+  author      String?
+  isPublished Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  createdBy   Int?
+  updatedBy   Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
 }
