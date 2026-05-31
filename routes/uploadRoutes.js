@@ -14,19 +14,6 @@ const allowedTypes = [
   "donation",
 ];
 
-function getBaseUrl(req) {
-  const envBaseUrl = process.env.API_BASE_URL || process.env.BACKEND_URL;
-
-  if (envBaseUrl) {
-    return envBaseUrl.replace(/\/$/, "");
-  }
-
-  const protocol = req.headers["x-forwarded-proto"] || req.protocol || "https";
-  const host = req.headers["x-forwarded-host"] || req.headers.host;
-
-  return `${protocol}://${host}`;
-}
-
 function runUpload(req, res, next) {
   uploadImage.single("image")(req, res, function (err) {
     if (err) {
@@ -34,7 +21,7 @@ function runUpload(req, res, next) {
 
       return res.status(400).json({
         msg: err.message || "Upload gambar gagal",
-        detail: String(err),
+        message: err.message || "Upload gambar gagal",
       });
     }
 
@@ -60,19 +47,12 @@ router.post("/:type", protectAdmin, (req, res, next) => {
     });
   }
 
-  const relativeUrl = `/uploads/${req.params.type}/${req.file.filename}`;
-  const absoluteUrl = `${getBaseUrl(req)}${relativeUrl}`;
+  const imageUrl = `/uploads/${req.params.type}/${req.file.filename}`;
 
   return res.status(201).json({
     msg: "Upload berhasil",
-    imageUrl: relativeUrl,
-    url: absoluteUrl,
-    file: {
-      filename: req.file.filename,
-      path: relativeUrl,
-      size: req.file.size,
-      mimetype: req.file.mimetype,
-    },
+    imageUrl,
+    url: imageUrl,
   });
 });
 
@@ -83,19 +63,12 @@ router.post("/", protectAdmin, runUpload, (req, res) => {
     });
   }
 
-  const relativeUrl = `/uploads/general/${req.file.filename}`;
-  const absoluteUrl = `${getBaseUrl(req)}${relativeUrl}`;
+  const imageUrl = `/uploads/general/${req.file.filename}`;
 
   return res.status(201).json({
     msg: "Upload berhasil",
-    imageUrl: relativeUrl,
-    url: absoluteUrl,
-    file: {
-      filename: req.file.filename,
-      path: relativeUrl,
-      size: req.file.size,
-      mimetype: req.file.mimetype,
-    },
+    imageUrl,
+    url: imageUrl,
   });
 });
 
