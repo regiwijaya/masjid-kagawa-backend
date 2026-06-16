@@ -1,11 +1,10 @@
-// server/server.js
+// server.js
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// ROUTES
 import activityRoutes from "./routes/activityRoutes.js";
 import announcementRoutes from "./routes/announcementRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
@@ -15,43 +14,38 @@ import donationSettingRoutes from "./routes/donationSettingRoutes.js";
 import aboutSettingRoutes from "./routes/aboutSettingRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
+import kajianRoutes from "./routes/kajianRoutes.js";
 
 dotenv.config();
 
 const app = express();
 
-// ===== PATH SETUP =====
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ===== CORS =====
 app.use(
- cors({
-   origin: true,
-   credentials: true,
-   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-   allowedHeaders: ["Content-Type", "Authorization"],
- })
+  cors({
+    origin: true,
+    credentials: true,
+  })
 );
 
-// ===== BODY LIMIT =====
-app.use(express.json({ limit: "20mb" }));
-app.use(express.urlencoded({ extended: true, limit: "20mb" }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// ===== STATIC FILE =====
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// ===== HEALTH CHECK =====
 app.get("/", (req, res) => {
- res.json({
-   status: "OK",
-   message: "Masjid Kagawa API is running 🚀",
-   env: process.env.NODE_ENV || "development",
- });
+  res.json({
+    status: "OK",
+    message: "Masjid Kagawa API is running 🚀",
+    env: process.env.NODE_ENV || "development",
+  });
 });
 
-// ===== ROUTES =====
 app.use("/api/uploads", uploadRoutes);
+app.use("/api/upload", uploadRoutes);
+
 app.use("/api/activities", activityRoutes);
 app.use("/api/announcements", announcementRoutes);
 app.use("/api/posts", postRoutes);
@@ -60,26 +54,25 @@ app.use("/api/about-settings", aboutSettingRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/prayer", prayerRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/kajian", kajianRoutes);
 
-// ===== 404 =====
 app.use((req, res) => {
- res.status(404).json({
-   message: "Route tidak ditemukan",
-   path: req.originalUrl,
- });
+  res.status(404).json({
+    message: "Route tidak ditemukan",
+    path: req.originalUrl,
+  });
 });
 
-// ===== ERROR HANDLER =====
 app.use((err, req, res, next) => {
- console.error("❌ SERVER ERROR:", err);
- res.status(err.status || 500).json({
-   message: err.message || "Server error",
- });
+  console.error("❌ SERVER ERROR:", err);
+
+  res.status(err.status || 500).json({
+    message: err.message || "Server error",
+  });
 });
 
-// ===== START =====
 const PORT = process.env.PORT || 5050;
 
 app.listen(PORT, () => {
- console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
