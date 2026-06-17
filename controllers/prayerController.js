@@ -16,22 +16,34 @@ function safeTime(value) {
   return value;
 }
 
-async function getOrCreateIqamahSetting() {
-  let iqamah = await prisma.iqamahSetting.findFirst();
+async function getOrCreateIqamahSettingSafe() {
+  try {
+    let iqamah = await prisma.iqamahSetting.findFirst();
 
-  if (!iqamah) {
-    iqamah = await prisma.iqamahSetting.create({
-      data: {},
-    });
+    if (!iqamah) {
+      iqamah = await prisma.iqamahSetting.create({
+        data: {},
+      });
+    }
+
+    return iqamah;
+  } catch (error) {
+    console.error("❌ IQAMAH DB ERROR:", error.message);
+
+    return {
+      subuh: null,
+      zuhur: null,
+      asar: null,
+      maghrib: null,
+      isya: null,
+    };
   }
-
-  return iqamah;
 }
 
 export async function getPrayerTimes(req, res) {
   try {
     const prayerData = await fetchPrayerTimesFromAladhan();
-    const iqamah = await getOrCreateIqamahSetting();
+    const iqamah = await getOrCreateIqamahSettingSafe();
 
     return res.json({
       date: prayerData.date,
@@ -60,31 +72,52 @@ export async function getPrayerTimes(req, res) {
   } catch (error) {
     console.error("❌ getPrayerTimes ERROR:", error);
 
-    return res.status(500).json({
-      message: "Failed to load prayer times",
-      error: error.message,
+    return res.json({
+      date: "",
+      location: "Masjid Kagawa",
+      timezone: "Asia/Tokyo",
+      source: "emergency",
+      adzan: {
+        subuh: "03:10",
+        syuruq: "04:55",
+        zuhur: "12:05",
+        dzuhur: "12:05",
+        asar: "15:58",
+        maghrib: "19:15",
+        isya: "20:50",
+      },
+      iqamah: {
+        subuh: "-",
+        zuhur: "-",
+        dzuhur: "-",
+        asar: "-",
+        maghrib: "-",
+        isya: "-",
+      },
     });
   }
 }
 
 export async function updateIqamah(req, res) {
   try {
-    const current = await getOrCreateIqamahSetting();
+    let current = await prisma.iqamahSetting.findFirst();
+
+    if (!current) {
+      current = await prisma.iqamahSetting.create({
+        data: {},
+      });
+    }
 
     const fields = ["subuh", "zuhur", "asar", "maghrib", "isya"];
     const updates = {};
 
     for (const field of fields) {
       const parsed = sanitizeTimeInput(req.body?.[field]);
-      if (parsed) {
-        updates[field] = parsed;
-      }
+      if (parsed) updates[field] = parsed;
     }
 
     const dzuhurParsed = sanitizeTimeInput(req.body?.dzuhur);
-    if (dzuhurParsed) {
-      updates.zuhur = dzuhurParsed;
-    }
+    if (dzuhurParsed) updates.zuhur = dzuhurParsed;
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({
