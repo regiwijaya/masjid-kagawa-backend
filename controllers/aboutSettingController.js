@@ -7,9 +7,21 @@ async function getOrCreateAboutSetting(adminId = null) {
     setting = await prisma.aboutSetting.create({
       data: {
         updatedBy: adminId || null,
-        historyText: "Masjid Kagawa berdiri sebagai pusat ibadah, dakwah, dan pembinaan...",
+        heroTitle: "Tentang Masjid Kagawa",
+        heroSubtitle: "Sejarah • Visi Misi • Struktur Pengurus",
+        heroImageUrl: "",
+        historyTitle: "Sejarah Masjid",
+        historyText:
+          "Masjid Kagawa berdiri sebagai pusat ibadah, dakwah, dan pembinaan...",
+        historyImageUrl: "",
+        visionTitle: "Visi",
         visionText: "Menjadi pusat ibadah, dakwah, dan pendidikan Islam...",
-        missionItems: ["Menyelenggarakan pembinaan keagamaan", "Menyediakan sarana ibadah", "Membangun ukhuwah"],
+        missionTitle: "Misi",
+        missionItems: [
+          "Menyelenggarakan pembinaan keagamaan",
+          "Menyediakan sarana ibadah",
+          "Membangun ukhuwah",
+        ],
         leaders: [],
         footerDescription: "",
         address: "",
@@ -18,7 +30,11 @@ async function getOrCreateAboutSetting(adminId = null) {
         mapEmbedUrl: "",
         imamDuty: "",
         muadzinDuty: "",
-        social: { facebook: "", instagram: "", youtube: "" },
+        social: {
+          facebook: "",
+          instagram: "",
+          youtube: "",
+        },
       },
     });
   }
@@ -26,23 +42,29 @@ async function getOrCreateAboutSetting(adminId = null) {
   return setting;
 }
 
+function toCleanString(value) {
+  if (typeof value !== "string") return "";
+  return value.trim();
+}
+
 function normalizeMissionItems(items) {
-  if (!Array.isArray(items)) return null;
-  const result = items.map((item) => (typeof item === "string" ? item.trim() : "")).filter(Boolean);
-  return result.length ? result : null;
+  if (!Array.isArray(items)) return [];
+  return items
+    .map((item) => toCleanString(item))
+    .filter(Boolean);
 }
 
 function normalizeLeaders(leaders) {
-  if (!Array.isArray(leaders)) return null;
-  const result = leaders
+  if (!Array.isArray(leaders)) return [];
+
+  return leaders
     .map((item) => ({
-      role: item?.role?.trim() || "",
-      name: item?.name?.trim() || "",
-      imageUrl: item?.imageUrl?.trim() || "",
-      note: item?.note?.trim() || "",
+      role: toCleanString(item?.role),
+      name: toCleanString(item?.name),
+      imageUrl: toCleanString(item?.imageUrl),
+      note: toCleanString(item?.note),
     }))
-    .filter((l) => l.role || l.name || l.imageUrl || l.note);
-  return result.length ? result : null;
+    .filter((item) => item.role || item.name || item.imageUrl || item.note);
 }
 
 export const getAboutSetting = async (req, res) => {
@@ -60,13 +82,25 @@ export const updateAboutSetting = async (req, res) => {
     const current = await getOrCreateAboutSetting(req.admin?.id);
 
     const stringFields = [
-      "heroTitle", "heroSubtitle", "heroImageUrl", "historyTitle",
-      "historyText", "historyImageUrl", "visionTitle", "visionText",
-      "missionTitle", "footerDescription", "address", "email",
-      "phone", "mapEmbedUrl", "imamDuty", "muadzinDuty",
+      "heroTitle",
+      "heroSubtitle",
+      "heroImageUrl",
+      "historyTitle",
+      "historyText",
+      "historyImageUrl",
+      "visionTitle",
+      "visionText",
+      "missionTitle",
+      "footerDescription",
+      "address",
+      "email",
+      "phone",
+      "mapEmbedUrl",
+      "imamDuty",
+      "muadzinDuty",
     ];
 
-    let updatedData = {};
+    const updatedData = {};
 
     for (const field of stringFields) {
       if (typeof req.body?.[field] === "string") {
@@ -74,17 +108,28 @@ export const updateAboutSetting = async (req, res) => {
       }
     }
 
-    const missionItems = normalizeMissionItems(req.body?.missionItems);
-    if (missionItems !== null) updatedData.missionItems = missionItems;
+    if (Array.isArray(req.body?.missionItems)) {
+      updatedData.missionItems = normalizeMissionItems(req.body.missionItems);
+    }
 
-    const leaders = normalizeLeaders(req.body?.leaders);
-    if (leaders !== null) updatedData.leaders = leaders;
+    if (Array.isArray(req.body?.leaders)) {
+      updatedData.leaders = normalizeLeaders(req.body.leaders);
+    }
 
     if (req.body?.social && typeof req.body.social === "object") {
       updatedData.social = {
-        facebook: req.body.social.facebook?.trim() ?? current.social?.facebook ?? "",
-        instagram: req.body.social.instagram?.trim() ?? current.social?.instagram ?? "",
-        youtube: req.body.social.youtube?.trim() ?? current.social?.youtube ?? "",
+        facebook:
+          typeof req.body.social.facebook === "string"
+            ? req.body.social.facebook.trim()
+            : current.social?.facebook || "",
+        instagram:
+          typeof req.body.social.instagram === "string"
+            ? req.body.social.instagram.trim()
+            : current.social?.instagram || "",
+        youtube:
+          typeof req.body.social.youtube === "string"
+            ? req.body.social.youtube.trim()
+            : current.social?.youtube || "",
       };
     }
 
@@ -95,7 +140,10 @@ export const updateAboutSetting = async (req, res) => {
       data: updatedData,
     });
 
-    return res.json({ msg: "About setting updated successfully", data: updated });
+    return res.json({
+      msg: "About setting updated successfully",
+      data: updated,
+    });
   } catch (err) {
     console.error("updateAboutSetting ERROR:", err);
     return res.status(500).json({ msg: "Server error" });
