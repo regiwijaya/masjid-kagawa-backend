@@ -105,6 +105,24 @@ model donationsetting {
   createdAt                  DateTime @default(now())
 }
 
+model donationconfirmation {
+  id              Int      @id @default(autoincrement())
+  donorName       String?
+  isAnonymous     Boolean  @default(false)
+  email           String?
+  contact         String?
+  currency        String   @default("JPY")
+  amount          String?
+  donationPurpose String
+  otherPurpose    String?
+  paymentMethod   String?
+  proofImageUrl   String?
+  message         String?  @db.Text
+  status          String   @default("pending")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now())
+}
+
 model iqamahsetting {
   id        Int      @id @default(autoincrement())
   subuh     String?

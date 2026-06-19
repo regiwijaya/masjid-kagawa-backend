@@ -109,6 +109,15 @@ async function mountRoutes() {
   );
 
   await mountRoute(
+    "donation-confirmations",
+    "/api/donation-confirmations",
+    "./routes/donationConfirmationRoutes.js",
+    {
+      required: true,
+    }
+  );
+
+  await mountRoute(
     "about-settings",
     "/api/about-settings",
     "./routes/aboutSettingRoutes.js",
