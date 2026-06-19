@@ -16,6 +16,20 @@ function safeTime(value) {
   return value;
 }
 
+function hasField(object, field) {
+  return Object.prototype.hasOwnProperty.call(object || {}, field);
+}
+
+function getZuhurFieldName(iqamah) {
+  if (hasField(iqamah, "zuhur")) return "zuhur";
+  if (hasField(iqamah, "dzuhur")) return "dzuhur";
+  return "zuhur";
+}
+
+function getZuhurValue(iqamah) {
+  return iqamah?.zuhur ?? iqamah?.dzuhur ?? null;
+}
+
 async function getOrCreateIqamahSettingSafe() {
   try {
     let iqamah = await prisma.iqamahSetting.findFirst();
@@ -33,6 +47,7 @@ async function getOrCreateIqamahSettingSafe() {
     return {
       subuh: null,
       zuhur: null,
+      dzuhur: null,
       asar: null,
       maghrib: null,
       isya: null,
@@ -44,6 +59,7 @@ export async function getPrayerTimes(req, res) {
   try {
     const prayerData = await fetchPrayerTimesFromAladhan();
     const iqamah = await getOrCreateIqamahSettingSafe();
+    const zuhurIqamah = getZuhurValue(iqamah);
 
     return res.json({
       date: prayerData.date,
@@ -62,8 +78,8 @@ export async function getPrayerTimes(req, res) {
       },
       iqamah: {
         subuh: safeTime(iqamah.subuh),
-        zuhur: safeTime(iqamah.zuhur),
-        dzuhur: safeTime(iqamah.zuhur),
+        zuhur: safeTime(zuhurIqamah),
+        dzuhur: safeTime(zuhurIqamah),
         asar: safeTime(iqamah.asar),
         maghrib: safeTime(iqamah.maghrib),
         isya: safeTime(iqamah.isya),
@@ -108,16 +124,23 @@ export async function updateIqamah(req, res) {
       });
     }
 
-    const fields = ["subuh", "zuhur", "asar", "maghrib", "isya"];
     const updates = {};
 
-    for (const field of fields) {
-      const parsed = sanitizeTimeInput(req.body?.[field]);
-      if (parsed) updates[field] = parsed;
-    }
+    const subuh = sanitizeTimeInput(req.body?.subuh);
+    const zuhur = sanitizeTimeInput(req.body?.zuhur || req.body?.dzuhur);
+    const asar = sanitizeTimeInput(req.body?.asar);
+    const maghrib = sanitizeTimeInput(req.body?.maghrib);
+    const isya = sanitizeTimeInput(req.body?.isya);
 
-    const dzuhurParsed = sanitizeTimeInput(req.body?.dzuhur);
-    if (dzuhurParsed) updates.zuhur = dzuhurParsed;
+    if (subuh) updates.subuh = subuh;
+    if (asar) updates.asar = asar;
+    if (maghrib) updates.maghrib = maghrib;
+    if (isya) updates.isya = isya;
+
+    if (zuhur) {
+      const zuhurFieldName = getZuhurFieldName(current);
+      updates[zuhurFieldName] = zuhur;
+    }
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({
@@ -130,12 +153,14 @@ export async function updateIqamah(req, res) {
       data: updates,
     });
 
+    const updatedZuhur = getZuhurValue(updated);
+
     return res.json({
       message: "Iqamah updated successfully",
       iqamah: {
         subuh: safeTime(updated.subuh),
-        zuhur: safeTime(updated.zuhur),
-        dzuhur: safeTime(updated.zuhur),
+        zuhur: safeTime(updatedZuhur),
+        dzuhur: safeTime(updatedZuhur),
         asar: safeTime(updated.asar),
         maghrib: safeTime(updated.maghrib),
         isya: safeTime(updated.isya),

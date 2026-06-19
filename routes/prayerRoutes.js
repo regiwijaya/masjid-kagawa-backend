@@ -11,4 +11,8 @@ router.get("/", getPrayerTimes);
 // ADMIN
 router.put("/iqamah", protectAdmin, updateIqamah);
 
+// BACKWARD COMPATIBILITY
+router.put("/", protectAdmin, updateIqamah);
+router.post("/", protectAdmin, updateIqamah);
+
 export default router;
