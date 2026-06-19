@@ -16,38 +16,23 @@ function safeTime(value) {
   return value;
 }
 
-function hasField(object, field) {
-  return Object.prototype.hasOwnProperty.call(object || {}, field);
-}
-
-function getZuhurFieldName(iqamah) {
-  if (hasField(iqamah, "zuhur")) return "zuhur";
-  if (hasField(iqamah, "dzuhur")) return "dzuhur";
-  return "zuhur";
-}
-
-function getZuhurValue(iqamah) {
-  return iqamah?.zuhur ?? iqamah?.dzuhur ?? null;
-}
-
 async function getOrCreateIqamahSettingSafe() {
   try {
-    let iqamah = await prisma.iqamahSetting.findFirst();
+    let iqamah = await prisma.iqamahsetting.findFirst();
 
     if (!iqamah) {
-      iqamah = await prisma.iqamahSetting.create({
+      iqamah = await prisma.iqamahsetting.create({
         data: {},
       });
     }
 
     return iqamah;
   } catch (error) {
-    console.error("❌ IQAMAH DB ERROR:", error.message);
+    console.error("❌ IQAMAH DB ERROR:", error);
 
     return {
       subuh: null,
       zuhur: null,
-      dzuhur: null,
       asar: null,
       maghrib: null,
       isya: null,
@@ -59,7 +44,6 @@ export async function getPrayerTimes(req, res) {
   try {
     const prayerData = await fetchPrayerTimesFromAladhan();
     const iqamah = await getOrCreateIqamahSettingSafe();
-    const zuhurIqamah = getZuhurValue(iqamah);
 
     return res.json({
       date: prayerData.date,
@@ -78,8 +62,8 @@ export async function getPrayerTimes(req, res) {
       },
       iqamah: {
         subuh: safeTime(iqamah.subuh),
-        zuhur: safeTime(zuhurIqamah),
-        dzuhur: safeTime(zuhurIqamah),
+        zuhur: safeTime(iqamah.zuhur),
+        dzuhur: safeTime(iqamah.zuhur),
         asar: safeTime(iqamah.asar),
         maghrib: safeTime(iqamah.maghrib),
         isya: safeTime(iqamah.isya),
@@ -116,10 +100,10 @@ export async function getPrayerTimes(req, res) {
 
 export async function updateIqamah(req, res) {
   try {
-    let current = await prisma.iqamahSetting.findFirst();
+    let current = await prisma.iqamahsetting.findFirst();
 
     if (!current) {
-      current = await prisma.iqamahSetting.create({
+      current = await prisma.iqamahsetting.create({
         data: {},
       });
     }
@@ -133,14 +117,10 @@ export async function updateIqamah(req, res) {
     const isya = sanitizeTimeInput(req.body?.isya);
 
     if (subuh) updates.subuh = subuh;
+    if (zuhur) updates.zuhur = zuhur;
     if (asar) updates.asar = asar;
     if (maghrib) updates.maghrib = maghrib;
     if (isya) updates.isya = isya;
-
-    if (zuhur) {
-      const zuhurFieldName = getZuhurFieldName(current);
-      updates[zuhurFieldName] = zuhur;
-    }
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({
@@ -148,19 +128,17 @@ export async function updateIqamah(req, res) {
       });
     }
 
-    const updated = await prisma.iqamahSetting.update({
+    const updated = await prisma.iqamahsetting.update({
       where: { id: current.id },
       data: updates,
     });
-
-    const updatedZuhur = getZuhurValue(updated);
 
     return res.json({
       message: "Iqamah updated successfully",
       iqamah: {
         subuh: safeTime(updated.subuh),
-        zuhur: safeTime(updatedZuhur),
-        dzuhur: safeTime(updatedZuhur),
+        zuhur: safeTime(updated.zuhur),
+        dzuhur: safeTime(updated.zuhur),
         asar: safeTime(updated.asar),
         maghrib: safeTime(updated.maghrib),
         isya: safeTime(updated.isya),
