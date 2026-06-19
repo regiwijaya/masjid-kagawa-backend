@@ -100,9 +100,9 @@ async function mountRoutes() {
   });
 
   await mountRoute(
-    "donation-confirmations",
-    "/api/donation-confirmations",
-    "./routes/donationConfirmationRoutes.js",
+    "donation-settings",
+    "/api/donation-settings",
+    "./routes/donationSettingRoutes.js",
     {
       required: true,
     }
