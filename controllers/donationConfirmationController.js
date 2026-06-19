@@ -6,9 +6,12 @@ function cleanString(value) {
 }
 
 function formatConfirmation(item) {
+  if (!item) return null;
+
   return {
     id: item.id,
     donorName: item.isAnonymous ? "Hamba Allah" : item.donorName || "",
+    rawDonorName: item.donorName || "",
     isAnonymous: item.isAnonymous,
     email: item.email || "",
     contact: item.contact || "",
@@ -79,6 +82,101 @@ export const createDonationConfirmation = async (req, res) => {
     });
   } catch (err) {
     console.error("createDonationConfirmation ERROR:", err);
+
+    return res.status(500).json({
+      msg: "Server error",
+      error: err.message,
+    });
+  }
+};
+
+export const getDonationConfirmations = async (req, res) => {
+  try {
+    const items = await prisma.donationconfirmation.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return res.json(items.map(formatConfirmation));
+  } catch (err) {
+    console.error("getDonationConfirmations ERROR:", err);
+
+    return res.status(500).json({
+      msg: "Server error",
+      error: err.message,
+    });
+  }
+};
+
+export const getPendingDonationConfirmationCount = async (req, res) => {
+  try {
+    const count = await prisma.donationconfirmation.count({
+      where: {
+        status: "pending",
+      },
+    });
+
+    return res.json({ count });
+  } catch (err) {
+    console.error("getPendingDonationConfirmationCount ERROR:", err);
+
+    return res.status(500).json({
+      msg: "Server error",
+      error: err.message,
+    });
+  }
+};
+
+export const updateDonationConfirmationStatus = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const status = cleanString(req.body?.status);
+
+    if (!id || Number.isNaN(id)) {
+      return res.status(400).json({ msg: "ID tidak valid." });
+    }
+
+    if (!["pending", "verified", "rejected"].includes(status)) {
+      return res.status(400).json({ msg: "Status tidak valid." });
+    }
+
+    const updated = await prisma.donationconfirmation.update({
+      where: { id },
+      data: { status },
+    });
+
+    return res.json({
+      msg: "Status konfirmasi donasi berhasil diperbarui.",
+      data: formatConfirmation(updated),
+    });
+  } catch (err) {
+    console.error("updateDonationConfirmationStatus ERROR:", err);
+
+    return res.status(500).json({
+      msg: "Server error",
+      error: err.message,
+    });
+  }
+};
+
+export const deleteDonationConfirmation = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!id || Number.isNaN(id)) {
+      return res.status(400).json({ msg: "ID tidak valid." });
+    }
+
+    await prisma.donationconfirmation.delete({
+      where: { id },
+    });
+
+    return res.json({
+      msg: "Konfirmasi donasi berhasil dihapus.",
+    });
+  } catch (err) {
+    console.error("deleteDonationConfirmation ERROR:", err);
 
     return res.status(500).json({
       msg: "Server error",
