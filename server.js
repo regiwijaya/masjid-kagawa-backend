@@ -15,6 +15,7 @@ let routeStatus = {
   mounted: false,
   error: null,
   mountedRoutes: [],
+  skippedRoutes: [],
 };
 
 app.use(cors({ origin: true, credentials: true }));
@@ -41,9 +42,16 @@ app.get("/__debug", (req, res) => {
   });
 });
 
-async function mountRoute(label, url, importPath) {
+async function mountRoute(label, url, importPath, options = {}) {
+  const required = options.required === true;
+
   try {
     const mod = await import(importPath);
+
+    if (!mod?.default) {
+      throw new Error(`Route ${label} does not export default router`);
+    }
+
     app.use(url, mod.default);
     routeStatus.mountedRoutes.push(url);
     console.log(`✅ Mounted ${label}: ${url}`);
@@ -53,26 +61,77 @@ async function mountRoute(label, url, importPath) {
       url,
       importPath,
       message: err.message,
-      stack: err.stack,
     };
 
-    routeStatus.error = errorInfo;
-    console.error(`❌ Failed mounting ${label}:`, err);
+    if (required) {
+      routeStatus.error = errorInfo;
+      console.error(`❌ Failed mounting required route ${label}:`, err);
+    } else {
+      routeStatus.skippedRoutes.push(errorInfo);
+      console.warn(`⚠️ Skipped optional route ${label}: ${err.message}`);
+    }
   }
 }
 
 async function mountRoutes() {
-  await mountRoute("uploads", "/api/uploads", "./routes/uploadRoutes.js");
-  await mountRoute("upload alias", "/api/upload", "./routes/uploadRoutes.js");
-  await mountRoute("activities", "/api/activities", "./routes/activityRoutes.js");
-  await mountRoute("announcements", "/api/announcements", "./routes/announcementRoutes.js");
-  await mountRoute("posts", "/api/posts", "./routes/postRoutes.js");
-  await mountRoute("donation-settings", "/api/donation-settings", "./routes/donationSettingRoutes.js");
-  await mountRoute("about-settings", "/api/about-settings", "./routes/aboutSettingRoutes.js");
-  await mountRoute("admin", "/api/admin", "./routes/adminRoutes.js");
-  await mountRoute("prayer", "/api/prayer", "./routes/prayerRoutes.js");
-  await mountRoute("contact", "/api/contact", "./routes/contactRoutes.js");
-  await mountRoute("kajian", "/api/kajian", "./routes/kajianRoutes.js");
+  await mountRoute("uploads", "/api/uploads", "./routes/uploadRoutes.js", {
+    required: true,
+  });
+
+  await mountRoute("upload alias", "/api/upload", "./routes/uploadRoutes.js", {
+    required: true,
+  });
+
+  await mountRoute("activities", "/api/activities", "./routes/activityRoutes.js", {
+    required: true,
+  });
+
+  await mountRoute(
+    "announcements",
+    "/api/announcements",
+    "./routes/announcementRoutes.js",
+    {
+      required: true,
+    }
+  );
+
+  await mountRoute("posts", "/api/posts", "./routes/postRoutes.js", {
+    required: true,
+  });
+
+  await mountRoute(
+    "donation-settings",
+    "/api/donation-settings",
+    "./routes/donationSettingRoutes.js",
+    {
+      required: true,
+    }
+  );
+
+  await mountRoute(
+    "about-settings",
+    "/api/about-settings",
+    "./routes/aboutSettingRoutes.js",
+    {
+      required: true,
+    }
+  );
+
+  await mountRoute("admin", "/api/admin", "./routes/adminRoutes.js", {
+    required: true,
+  });
+
+  await mountRoute("prayer", "/api/prayer", "./routes/prayerRoutes.js", {
+    required: true,
+  });
+
+  await mountRoute("contact", "/api/contact", "./routes/contactRoutes.js", {
+    required: true,
+  });
+
+  await mountRoute("kajian", "/api/kajian", "./routes/kajianRoutes.js", {
+    required: false,
+  });
 
   routeStatus.mounted = routeStatus.mountedRoutes.length > 0;
 
