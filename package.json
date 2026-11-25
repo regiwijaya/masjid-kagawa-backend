@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "postinstall": "prisma generate"
+    "postinstall": "node scripts/generate-client.js",
+    "test": "node --test --test-concurrency=1"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

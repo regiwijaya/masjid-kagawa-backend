@@ -1,3 +1,6 @@
+import "./config/runtime.js";
+import prisma from "./prisma/client.js";
+import { createReadinessCheck } from "./services/readiness.js";
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -7,6 +10,14 @@ import { fileURLToPath } from "url";
 dotenv.config();
 
 const app = express();
+const databaseReady = createReadinessCheck(prisma);
+app.get("/health/live", (req, res) => {
+  res.set("Cache-Control", "no-store").json({ status: "ok", release: "bounded-prisma-20261125" });
+});
+app.get("/health/ready", async (req, res) => {
+  const ready = await databaseReady();
+  res.set("Cache-Control", "no-store").status(ready ? 200 : 503).json({ status: ready ? "ready" : "unavailable" });
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

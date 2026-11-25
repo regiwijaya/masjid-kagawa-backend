@@ -1,18 +1,17 @@
-import { PrismaClient } from "@prisma/client";
+import { databaseUrl } from "../config/runtime.js";
+
+// Dynamic import guarantees configuration is applied before Prisma loads.
+const { PrismaClient } = await import("@prisma/client");
 
 const globalForPrisma = globalThis;
 
 const prisma =
   globalForPrisma.prisma ||
   new PrismaClient({
-    log:
-      process.env.NODE_ENV === "production"
-        ? ["error"]
-        : ["query", "info", "warn", "error"],
+    datasourceUrl: databaseUrl(process.env.DATABASE_URL),
+    log: ["warn", "error"],
   });
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+globalForPrisma.prisma = prisma;
 
 export default prisma;
